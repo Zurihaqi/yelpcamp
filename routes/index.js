@@ -1,37 +1,37 @@
-var express = require("express");
-var router = express.Router();
-var passport = require("passport");
-var User = require("../models/user");
-var Campground = require("../models/campground");
-var Comment = require("../models/comment");
-var middleware = require("../middleware");
-var multer = require("multer");
-var storage = multer.diskStorage({
-  filename: function(req, file, callback) {
+const express = require("express");
+const router = express.Router();
+const passport = require("passport");
+const User = require("../models/user");
+const Campground = require("../models/campground");
+const Comment = require("../models/comment");
+const middleware = require("../middleware");
+const multer = require("multer");
+const storage = multer.diskStorage({
+  filename: function (req, file, callback) {
     callback(null, Date.now() + file.originalname);
-  }
+  },
 });
-var imageFilter = function(req, file, cb) {
+const imageFilter = function (req, file, cb) {
   // accept image files only
   if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/i)) {
     return cb(new Error("Only image files are allowed!"), false);
   }
   cb(null, true);
 };
-var upload = multer({
+const upload = multer({
   storage: storage,
-  fileFilter: imageFilter
+  fileFilter: imageFilter,
 });
 
-var cloudinary = require("cloudinary");
+const cloudinary = require("cloudinary").v2;
 cloudinary.config({
-  cloud_name: "dmrien29n",
+  cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.API_KEY,
-  api_secret: process.env.API_SECRET
+  api_secret: process.env.API_SECRET,
 });
 
 // root route
-router.get("/", function(req, res) {
+router.get("/", function (req, res) {
   if (req.user) {
     return res.redirect("/campgrounds");
   } else {
@@ -39,12 +39,12 @@ router.get("/", function(req, res) {
   }
 });
 
-router.get("/about", function(req, res) {
+router.get("/about", function (req, res) {
   res.render("about");
 });
 
 // show register form
-router.get("/register", function(req, res) {
+router.get("/register", function (req, res) {
   if (req.user) {
     return res.redirect("/campgrounds");
   } else {
@@ -53,68 +53,70 @@ router.get("/register", function(req, res) {
 });
 
 // handle sign up logic
-router.post("/register", upload.single("image"), function(req, res) {
+router.post("/register", upload.single("image"), function (req, res) {
   if (req.file === undefined) {
-    var newUser = new User({
+    const newUser = new User({
       username: req.body.username,
       email: req.body.email,
       phone: req.body.phone,
       fullName: req.body.fullName,
       image: "",
-      imageId: ""
+      imageId: "",
     });
-    User.register(newUser, req.body.password, function(err, user) {
+    User.register(newUser, req.body.password, function (err, user) {
       if (err) {
         return res.render("register", {
-          error: err.message
+          error: err.message,
         });
       }
-      passport.authenticate("local")(req, res, function() {
+      passport.authenticate("local")(req, res, function () {
         res.redirect("/campgrounds");
       });
     });
   } else {
-    cloudinary.v2.uploader.upload(
-      req.file.path, {
+    cloudinary.uploader.upload(
+      req.file.path,
+      {
         width: 400,
         height: 400,
         gravity: "center",
-        crop: "scale"
+        crop: "scale",
       },
-      function(err, result) {
+      function (err, result) {
         if (err) {
           req.flash("error", err.messsage);
           return res.redirect("back");
         }
         req.body.image = result.secure_url;
         req.body.imageId = result.public_id;
-        var newUser = new User({
+        const newUser = new User({
           username: req.body.username,
           email: req.body.email,
           phone: req.body.phone,
           fullName: req.body.fullName,
           image: req.body.image,
-          imageId: req.body.imageId
+          imageId: req.body.imageId,
         });
-        User.register(newUser, req.body.password, function(err, user) {
+        User.register(newUser, req.body.password, function (err, user) {
           if (err) {
             return res.render("register", {
-              error: err.message
+              error: err.message,
             });
           }
-          passport.authenticate("local")(req, res, function() {
+          passport.authenticate("local")(req, res, function () {
             res.redirect("/campgrounds");
           });
         });
-      }, {
-        moderation: "webpurify"
+      },
+      {
+        moderation: "webpurify",
       }
     );
   }
 });
 
 // show login form
-router.get("/login", function(req, res) {
+router.get("/login", function (req, res) {
   if (req.user) {
     return res.redirect("/campgrounds");
   } else {
@@ -128,20 +130,24 @@ router.post(
   passport.authenticate("local", {
     successRedirect: "/campgrounds",
     failureRedirect: "/login",
-    failureFlash: true
+    failureFlash: true,
   }),
-  function(req, res) {}
+  function (req, res) {}
 );
 
 // logout route
-router.get("/logout", function(req, res) {
-  req.logout();
+router.get("/logout", function (req, res) {
+  req.logout(function (err) {
+    if (err) {
+      return next(err);
+    }
+  });
   res.redirect("/");
 });
 
 // user profile
-router.get("/users/:user_id", function(req, res) {
-  User.findById(req.params.user_id, function(err, foundUser) {
+router.get("/users/:user_id", function (req, res) {
+  User.findById(req.params.user_id, function (err, foundUser) {
     if (err || !foundUser) {
       req.flash("error", "This user doesn't exist");
       return res.render("error");
@@ -149,7 +155,7 @@ router.get("/users/:user_id", function(req, res) {
     Campground.find()
       .where("author.id")
       .equals(foundUser._id)
-      .exec(function(err, campgrounds) {
+      .exec(function (err, campgrounds) {
         if (err) {
           req.flash("error", "Something went wrong");
           res.render("error");
@@ -157,7 +163,7 @@ router.get("/users/:user_id", function(req, res) {
         Comment.find()
           .where("author.id")
           .equals(foundUser._id)
-          .exec(function(err, ratedCount) {
+          .exec(function (err, ratedCount) {
             if (err) {
               req.flash("error", "Something went wrong");
               res.render("error");
@@ -165,7 +171,7 @@ router.get("/users/:user_id", function(req, res) {
             res.render("users/show", {
               user: foundUser,
               campgrounds: campgrounds,
-              reviews: ratedCount
+              reviews: ratedCount,
             });
           });
       });
@@ -177,33 +183,31 @@ router.get(
   "/users/:user_id/edit",
   middleware.isLoggedIn,
   middleware.checkProfileOwnership,
-  function(req, res) {
+  function (req, res) {
     res.render("users/edit", {
-      user: req.user
+      user: req.user,
     });
   }
 );
 
 // update profile
-router.put(
+router.patch(
   "/users/:user_id",
   upload.single("image"),
   middleware.checkProfileOwnership,
-  function(req, res) {
-    User.findById(req.params.user_id, async function(err, user) {
+  function (req, res) {
+    User.findById(req.params.user_id, async function (err, user) {
       if (err) {
         req.flash("error", err.message);
       } else {
         if (req.file) {
           try {
-            await cloudinary.v2.uploader.destroy(user.imageId);
-            var result = await cloudinary.v2.uploader.upload(req.file.path, {
+            if (user.imageId) await cloudinary.uploader.destroy(user.imageId);
+            const result = await cloudinary.uploader.upload(req.file.path, {
               width: 400,
               height: 400,
               gravity: "center",
-              crop: "scale"
-            }, {
-              moderation: "webpurify"
+              crop: "scale",
             });
             user.imageId = result.public_id;
             user.image = result.secure_url;
@@ -224,31 +228,32 @@ router.put(
 );
 
 // delete user
-router.delete("/users/:user_id", middleware.checkProfileOwnership, function(
-  req,
-  res
-) {
-  User.findById(req.params.user_id, async function(err, user) {
-    if (err) {
-      req.flash("error", err.message);
-      return res.redirect("back");
-    }
-    if (user.image === "") {
-      user.remove();
-      res.redirect("/");
-    } else {
-      try {
-        await cloudinary.v2.uploader.destroy(user.imageId);
+router.delete(
+  "/users/:user_id",
+  middleware.checkProfileOwnership,
+  function (req, res) {
+    User.findById(req.params.user_id, async function (err, user) {
+      if (err) {
+        req.flash("error", err.message);
+        return res.redirect("back");
+      }
+      if (user.image === "") {
         user.remove();
         res.redirect("/");
-      } catch (err) {
-        if (err) {
-          req.flash("error", err.message);
-          return res.redirect("back");
+      } else {
+        try {
+          await cloudinary.uploader.destroy(user.imageId);
+          user.remove();
+          res.redirect("/");
+        } catch (err) {
+          if (err) {
+            req.flash("error", err.message);
+            return res.redirect("back");
+          }
         }
       }
-    }
-  });
-});
+    });
+  }
+);
 
 module.exports = router;
