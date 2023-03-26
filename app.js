@@ -3,6 +3,7 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+const path = require("path");
 // const Campground = require("./models/campground");
 // const Comment = require("./models/comment");
 const passport = require("passport");
@@ -31,7 +32,8 @@ async function main() {
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
-app.use(express.static(__dirname + "/public"));
+app.use(express.static(path.join(__dirname, "public")));
+app.set("views", path.join(__dirname, "views"));
 app.use(methodOverride("_method"));
 app.use(flash());
 
