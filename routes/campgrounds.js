@@ -262,11 +262,11 @@ router.patch(
     //   if (err || !data.length) {
     //     req.flash("error", "Invalid address");
     //     return res.redirect("back");
+    // req.body.campground.lat = data[0].latitude;
+    // req.body.campground.lng = data[0].longitude;
+    // req.body.campground.location = data[0].formattedAddress;
     //   }
     // });
-    req.body.campground.lat = data[0].latitude;
-    req.body.campground.lng = data[0].longitude;
-    req.body.campground.location = data[0].formattedAddress;
     req.body.campground.booking = {
       start: req.body.campground.start,
       end: req.body.campground.end,
