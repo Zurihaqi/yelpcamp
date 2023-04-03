@@ -263,22 +263,22 @@
 
     <script>
       function initMap() {
-        var lat = <%= campground.lat %>;
-        var lng = <%= campground.lng %>;
-        var center = {
+        let lat = <%= campground.lat %>
+        let lng = <%= campground.lng %>
+        const center = {
           lat: lat,
           lng: lng
         };
-        var map = new google.maps.Map(document.getElementById("map"), {
+        const map = new google.maps.Map(document.getElementById("map"), {
           zoom: 8,
           center: center,
           scrollwheel: false
         });
-        var contentString = "<%= campground.location %>";
-        var infowindow = new google.maps.InfoWindow({
+        const contentString = "<%= campground.location %>";
+        const infowindow = new google.maps.InfoWindow({
           content: contentString
         });
-        var marker = new google.maps.Marker({
+        const marker = new google.maps.Marker({
           position: center,
           map: map
         });
